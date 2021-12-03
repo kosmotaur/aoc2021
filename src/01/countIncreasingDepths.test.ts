@@ -25,7 +25,7 @@ const withNIncreasing: (n: number) => Arbitrary<Depths> = (n) =>
     }, sortedDecreasingDepths);
   });
 
-describe('01', () => {
+describe('01-1', () => {
   it('has no increases for depths count less than 2', () => {
     fc.assert(
       fc.property(
