@@ -1,4 +1,4 @@
-import depthIncreaseCount from './index';
+import depthIncreaseCount from './countIncreasingDepths';
 import fc from 'fast-check';
 
 const withNIncreasing = (n: number) =>
