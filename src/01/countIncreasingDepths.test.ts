@@ -1,23 +1,29 @@
 import depthIncreaseCount from './countIncreasingDepths';
-import fc from 'fast-check';
+import fc, { Arbitrary } from 'fast-check';
+import Chance from 'chance';
 
-const withNIncreasing = (n: number) =>
-  fc.tuple(
-    fc
-      .array(fc.nat())
-      .filter(
-        (depths) =>
-          depths.length > n &&
-          depths.reduce(
-            (increasingCount, depth, i) =>
-              i > 0 && depth > depths[i - 1]
-                ? increasingCount + 1
-                : increasingCount,
-            0
-          ) === n
-      ),
-    fc.constant(n)
-  );
+const chance = Chance();
+
+type Depth = number;
+type Depths = Depth[];
+
+const withNIncreasing: (n: number) => Arbitrary<Depths> = (n) =>
+  fc.array(fc.nat(), { minLength: n + 1 }).map((depths) => {
+    const sortedDecreasingDepths = depths.sort((a, b) => b - a);
+    const indicesBeforeIncreaseOfDepth = chance
+      .unique(
+        () =>
+          chance.natural({ min: 0, max: sortedDecreasingDepths.length - 2 }),
+        n
+      )
+      .sort((a, b) => a - b);
+
+    return indicesBeforeIncreaseOfDepth.reduce((acc, index) => {
+      acc[index + 1] = acc[index] + chance.natural({ min: 1 });
+
+      return acc;
+    }, sortedDecreasingDepths);
+  });
 
 describe('01', () => {
   it('has no increases for depths count less than 2', () => {
@@ -33,9 +39,11 @@ describe('01', () => {
   it('calculates number of increases', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 3, max: 7 }).chain((n) => withNIncreasing(n)),
-        ([depths, increases]) => {
-          expect(depthIncreaseCount(depths)).toBe(increases);
+        fc
+          .integer({ min: 1, max: 10 })
+          .chain((n) => fc.tuple(withNIncreasing(n), fc.constant(n))),
+        ([depths, numberOfIncreases]) => {
+          expect(depthIncreaseCount(depths)).toBe(numberOfIncreases);
         }
       )
     );
